@@ -8,6 +8,8 @@
 
 
 
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -37,15 +39,25 @@
       position:relative;
     }
     .open-dashboard-btn{
-      position:absolute; bottom:6px; right:14px;
-      background:#FFD700; color:#1a237e;
+      position:absolute; bottom:8px; right:14px;
+      background:linear-gradient(180deg,#2b2b2b 0%,#000 55%,#111 100%); color:#FFD700;
       font-size:11px; font-weight:bold; letter-spacing:.5px;
       padding:6px 12px; border-radius:6px;
-      border:1px solid #c9a800; text-decoration:none;
-      box-shadow:0 2px 4px rgba(0,0,0,.25);
+      border:1px solid #00bcd4; text-decoration:none;
+      text-shadow:0 0 6px rgba(255,215,0,.6);
+      box-shadow:0 5px 0 #007c8c, 0 8px 10px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.25);
+      transition:transform .12s, box-shadow .12s;
       z-index:2;
     }
-    .open-dashboard-btn:hover{background:#e6c200;}
+    .open-dashboard-btn:hover{
+      background:linear-gradient(180deg,#333 0%,#0a0a0a 55%,#1a1a1a 100%);
+      transform:translateY(-1px);
+      box-shadow:0 6px 0 #007c8c, 0 10px 12px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.3);
+    }
+    .open-dashboard-btn:active{
+      transform:translateY(5px);
+      box-shadow:0 0 0 #007c8c, 0 2px 4px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.2);
+    }
     .header-inner{display:flex;align-items:center;gap:14px;}
     .logo-circle{
       width:64px;height:64px;border-radius:50%;
@@ -106,6 +118,20 @@
     .btn-blue:disabled{background:#aaa;cursor:not-allowed;transform:none;}
     .btn-red{background:linear-gradient(135deg,#c0392b,#e74c3c);color:#fff;}
     .btn-red:hover{background:linear-gradient(135deg,#a93226,#c0392b);transform:translateY(-1px);}
+    .btn-grey{background:linear-gradient(135deg,#566573,#7f8c8d);color:#fff;}
+    .btn-grey:hover{background:linear-gradient(135deg,#424949,#566573);transform:translateY(-1px);}
+    /* ── Saving overlay ── */
+    #saveOverlay{display:none;position:fixed;inset:0;background:rgba(30,34,60,.7);z-index:10000;align-items:center;justify-content:center;padding:15px;}
+    #saveOverlay.show{display:flex;}
+    .save-card{background:#fff;border-radius:22px;padding:32px 44px 30px;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.35);max-width:100%;}
+    .save-ring{position:relative;width:96px;height:96px;margin:0 auto 22px;}
+    .save-spinner{width:100%;height:100%;box-sizing:border-box;border:9px solid #d5efdc;border-top-color:#27ae60;border-radius:50%;animation:saveSpin 1s linear infinite;}
+    .save-hand{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+    .save-hand span{display:inline-block;font-size:40px;line-height:1;transform-origin:60% 90%;animation:handWave 1.1s ease-in-out infinite;}
+    @keyframes handWave{0%,100%{transform:rotate(-14deg);}50%{transform:rotate(14deg);}}
+    .save-title{font-size:19px;font-weight:bold;color:#1e8449;letter-spacing:.4px;text-transform:uppercase;}
+    .save-sub{margin-top:8px;font-size:14px;font-weight:bold;color:#27ae60;}
+    @keyframes saveSpin{to{transform:rotate(360deg);}}
     .delete-btn{background:#e74c3c;color:#fff;border:none;border-radius:4px;padding:4px 10px;cursor:pointer;font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.3px;}
     .delete-btn:hover{background:#c0392b;}
     #toast{
@@ -143,7 +169,7 @@
     <div class="header-inner">
    
       <div class="header-text">
-        <div class="hindi">LR / HANDLING DATA FORM</div>
+        <div class="hindi">ALP 34 DAY HANDLING DATA ENTRY FORM</div>
         <div class="sub">South East Central Railway</div>
         <div class="sub2">Raipur Division</div>
       </div>
@@ -290,6 +316,7 @@
     <div class="btn-row">
       <button class="btn btn-green" id="submitBtn" onclick="handleSubmit()">✔ Submit to Google Sheet</button>
       <button class="btn btn-red" id="pdfBtn" onclick="generatePDF()">⬇ Generate PDF</button>
+      <button class="btn btn-grey" id="resetBtn" onclick="resetForm()">↺ Reset Form</button>
     </div>
 
   </div>
@@ -305,12 +332,23 @@
   <option value="MXA">
 </datalist>
 
+<div id="saveOverlay">
+  <div class="save-card">
+    <div class="save-ring">
+      <div class="save-spinner"></div>
+      <div class="save-hand"><span>✋</span></div>
+    </div>
+    <div class="save-title">⏳ Please wait — Data saving...</div>
+    <div class="save-sub">Do not close or refresh this page</div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
   // ── Google Apps Script Web App URL ──
   // This single Apps Script handles BOTH trainee fetch AND form submission.
-  const SHEET_URL = ' https://script.google.com/macros/s/AKfycbygRjVKy8QjUbre-Np0oAETFq9y6FNqawYZbiJ6z5rSLu_V8ytWevvp_xnK25Ya7L6l/exec';
+  const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzBiQy6NPp81IlbtlpCebIgKhdoGoy34BEja-kYssyOM400py4VuMRC8no4vH3lUsXFlA/exec';
 
   // ── Trainee Sheet details ──
   const TRAINEE_SHEET_ID = '1Yn450uce02hgfbXJmRzd9aBY6bBEgaginXOctu--izg';
@@ -588,6 +626,49 @@
 
   let isSubmitted = false;
 
+  // ── Saving overlay (blocks the page until data is saved) ──
+  function warnBeforeLeave(e) { e.preventDefault(); e.returnValue = ''; }
+  function showSaving(on) {
+    document.getElementById('saveOverlay').classList.toggle('show', on);
+    if (on) window.addEventListener('beforeunload', warnBeforeLeave);
+    else    window.removeEventListener('beforeunload', warnBeforeLeave);
+  }
+
+  // ── Reset the whole form back to blank ──
+  function resetForm() {
+    if (!confirm('⚠️ RESET FORM?\n\nALL ENTERED DATA WILL BE CLEARED.')) return;
+
+    // Trainee details
+    const trainee = document.getElementById('traineeName');
+    trainee.value = '';
+    ['designation', 'hq', 'hrms'].forEach(id => {
+      const el = document.getElementById(id);
+      el.value = '';
+      el.removeAttribute('readonly');
+      el.title = '';
+    });
+    document.getElementById('nominatedcli').value = '';
+
+    // Handling entries: remove all, start again with one blank entry
+    document.getElementById('entriesWrap').innerHTML = '';
+    rowCount = 0;
+    addRow();
+
+    // Re-enable Submit / PDF buttons
+    isSubmitted = false;
+    const sBtn = document.getElementById('submitBtn');
+    sBtn.disabled = false;
+    sBtn.textContent = '✔ Submit to Google Sheet';
+    sBtn.style.background = '';
+    sBtn.title = '';
+    const pBtn = document.getElementById('pdfBtn');
+    pBtn.disabled = false;
+    pBtn.textContent = '⬇ Generate PDF';
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    showToast('🔄 Form reset. All fields are blank.', 'info');
+  }
+
   async function handleSubmit() {
     if (isSubmitted) {
       alert('⚠️ DATA ALREADY SUBMITTED');
@@ -606,6 +687,8 @@
     btn.textContent = '⏳ Submitting...';
 
     const payload = collectData();
+    showSaving(true);
+    const startedAt = Date.now();
 
     try {
       const res = await fetch(SHEET_URL, {
@@ -615,12 +698,16 @@
         body: JSON.stringify(payload),
       });
       // no-cors returns opaque response, assume success if no network error
+      const wait = 800 - (Date.now() - startedAt);   // keep animation visible at least ~0.8s
+      if (wait > 0) await new Promise(r => setTimeout(r, wait));
+      showSaving(false);
       isSubmitted = true;
       btn.textContent = '✅ Submitted';
       btn.style.background = 'linear-gradient(135deg,#7f8c8d,#95a5a6)';
       btn.title = 'Data already submitted';
       showToast('✅ Data submitted to Google Sheet!', 'success');
     } catch (err) {
+      showSaving(false);
       showToast('❌ Failed to connect. Check the Web App URL.', 'error');
       btn.disabled = false;
       btn.textContent = '✔ Submit to Google Sheet';
@@ -754,26 +841,48 @@
 
 <!--
 ════════════════════════════════════════════════════════════════
-  GOOGLE APPS SCRIPT — REPLACE YOUR EXISTING SCRIPT WITH THIS
+  GOOGLE APPS SCRIPT — deployed at:
+  https://script.google.com/macros/s/AKfycbzBiQy6NPp81IlbtlpCebIgKhdoGoy34BEja-kYssyOM400py4VuMRC8no4vH3lUsXFlA/exec
+
+  This single project now handles THREE things:
+    • doGet  ?action=getTrainees  → trainee dropdown for this form
+    • doGet  ?action=getData      → dashboard read endpoint
+    • doPost                      → form submission (append row)
+
+  On any doPost error, a row is also appended to an "ErrorLog"
+  tab in the submission sheet, so failures are visible even
+  though the form's fetch uses mode:'no-cors' and can't read
+  the real response.
 ════════════════════════════════════════════════════════════════
-
-1. Go to: https://script.google.com
-2. Open your existing project (or New Project)
-3. REPLACE ALL CODE with the following:
-
-─────────────────────────────────────────────────────────────
 
 var SUBMIT_SHEET_ID  = '1itfeMUmvvrIKt5F6lSsTsIi6os42DeO7Plnligiqfg4'; // Submission sheet
 var TRAINEE_SHEET_ID = '1Yn450uce02hgfbXJmRzd9aBY6bBEgaginXOctu--izg'; // Trainee master sheet
+var DATA_SHEET_ID    = '1itfeMUmvvrIKt5F6lSsTsIi6os42DeO7Plnligiqfg4'; // Dashboard read source
 
 function doGet(e) {
   var action = e && e.parameter && e.parameter.action;
-  if (action === 'getTrainees') {
-    return getTrainees();
-  }
+  if (action === 'getTrainees') return getTrainees();
+  if (action === 'getData')     return getSheetDataAsJSON(e);
   return ContentService
     .createTextOutput(JSON.stringify({status:'ok'}))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+function getSheetDataAsJSON(e) {
+  try {
+    var ss = SpreadsheetApp.openById(DATA_SHEET_ID);
+    var sheetName = (e.parameter.sheet || ss.getSheets()[0].getName());
+    var sheet = ss.getSheetByName(sheetName);
+    if (!sheet) throw new Error('Sheet "' + sheetName + '" not found');
+    var rows = sheet.getDataRange().getDisplayValues();
+    return ContentService
+      .createTextOutput(JSON.stringify({ success: true, rows: rows }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ success: false, error: err.message }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
 }
 
 function getTrainees() {
@@ -846,6 +955,16 @@ function doPost(e) {
       .createTextOutput(JSON.stringify({status:'success'}))
       .setMimeType(ContentService.MimeType.JSON);
   } catch(err) {
+    try {
+      var logSs = SpreadsheetApp.openById(SUBMIT_SHEET_ID);
+      var errSheet = logSs.getSheetByName('ErrorLog') || logSs.insertSheet('ErrorLog');
+      errSheet.appendRow([
+        new Date(),
+        err.toString(),
+        e && e.postData ? e.postData.contents : '(no postData received)'
+      ]);
+    } catch (logErr) { /* ignore logging failure */ }
+
     return ContentService
       .createTextOutput(JSON.stringify({status:'error', message: err.toString()}))
       .setMimeType(ContentService.MimeType.JSON);
@@ -854,13 +973,13 @@ function doPost(e) {
 
 ─────────────────────────────────────────────────────────────
 
-4. Click Deploy → Manage Deployments → Edit (pencil icon)
-   → Version: "New Version" → Deploy
-   (Keep the SAME Web App URL — no need to update the HTML)
+Any code changes require: Deploy → Manage Deployments → Edit
+(pencil icon) → Version: "New Version" → Deploy — otherwise the
+live URL keeps running the OLD code.
 
-5. Your Trainee sheet (1Yn450uce02hgfbXJmRzd9aBY6bBEgaginXOctu--izg)
-   must have columns with headers: NAME | DESIGNATION | HQ | HRMS ID
-   (Row 1 = headers, Row 2 onwards = data)
+Your Trainee sheet (1Yn450uce02hgfbXJmRzd9aBY6bBEgaginXOctu--izg)
+must have columns with headers: NAME | DESIGNATION | HQ | HRMS ID
+(Row 1 = headers, Row 2 onwards = data)
 
 SUBMIT SHEET COLUMN ORDER:
 A: Timestamp | B: Trainee Name | C: Designation | D: HQ | E: HRMS ID | F: Nominated CLI
